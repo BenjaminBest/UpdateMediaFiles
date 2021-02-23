@@ -1,6 +1,7 @@
 ﻿using CommandLine;
 using System;
 using System.IO;
+using TagLib;
 
 namespace UpdateMediaFiles
 {
@@ -13,7 +14,7 @@ namespace UpdateMediaFiles
 
             //The end
             Console.WriteLine("Press any key ..");
-            Console.ReadKey();            
+            Console.ReadKey();
         }
 
         static void RunOptions(CommandLineOptions opts)
@@ -21,7 +22,7 @@ namespace UpdateMediaFiles
             if (!string.IsNullOrEmpty(opts.AbsoluteFilename))
                 UpdateFile(opts.AbsoluteFilename);
 
-            if(!string.IsNullOrEmpty(opts.Folder) && !string.IsNullOrEmpty(opts.Extension))
+            if (!string.IsNullOrEmpty(opts.Folder) && !string.IsNullOrEmpty(opts.Extension))
                 UpdateFolder(opts.Folder, opts.Extension);
 
             if (!string.IsNullOrEmpty(opts.Folder) && !string.IsNullOrEmpty(opts.ListFileswithExtension))
@@ -47,26 +48,34 @@ namespace UpdateMediaFiles
 
         static void UpdateFile(string absoluteFilename)
         {
-            //TODO: M4v
             var filename = Path.GetFileName(absoluteFilename).Replace(Path.GetExtension(absoluteFilename), "");
 
-            if (!File.Exists(absoluteFilename))
+            if (!System.IO.File.Exists(absoluteFilename))
             {
                 Console.WriteLine($"File '{absoluteFilename}' does not exist");
                 return;
             }
 
-            //https://github.com/mono/taglib-sharp
-            var tfile = TagLib.File.Create(absoluteFilename);
-            string title = tfile.Tag.Title;
+            try
+            {
 
-            Console.WriteLine("Title of video: '{0}' is '{1}'", filename, title);
 
-            // change title in the file
-            tfile.Tag.Title = filename;
-            tfile.Save();
+                //https://github.com/mono/taglib-sharp
+                var tfile = TagLib.File.Create(absoluteFilename);
+                string title = tfile.Tag.Title;
 
-            Console.WriteLine("Title of video changed to '{0}'", tfile.Tag.Title);
+                Console.WriteLine("Title of video: '{0}' is '{1}'", filename, title);
+
+                // change title in the file
+                tfile.Tag.Title = filename;
+                tfile.Save();
+
+                Console.WriteLine("Title of video changed to '{0}'", tfile.Tag.Title);
+            }
+            catch (CorruptFileException)
+            {
+                Console.WriteLine($"File '{absoluteFilename}' could not be updated. Most likely its bigger than 4GB.");
+            }
         }
 
     }
